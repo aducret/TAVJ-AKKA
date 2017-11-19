@@ -1,0 +1,12 @@
+Enunciado de TP:
+
+Desarrollar la infraestructura para hostear de manera escalable los "game rooms" usando Akka y una base de datos MongoDB.
+
+    Actor de "Game Room"
+    Actor de "Game Room Manager"
+    Actor de "System Monitor"
+    Interfaz HTTP para crear un Game Room
+    Interfaz HTTP para pedir los datos de un sistema
+    Interfaz HTTP para pedir la dirección de un Game Room
+    Guardado de información de sistema en MongoDB (por parte del System Monitor)
+
