@@ -80,6 +80,11 @@ public class Main extends AllDirectives {
                     String gameRoomId = gameRoomCreate.getGameRoomId();
                     System.out.println("Main(createGameRoomRoute) - GameRoomCreated(id: " + gameRoomId + ", ownerId: " + userId + ") received");
                     return complete(StatusCodes.OK, "Create GameRoom(id: " + gameRoomId + ") owner userId " + userId);
+                } else if (message instanceof GameRoomManager.UserIsAlreadyInGame) {
+                    GameRoomManager.UserIsAlreadyInGame userIsAlreadyInGame = (GameRoomManager.UserIsAlreadyInGame) message;
+                    String gameRoomId = userIsAlreadyInGame.getGameRoomId();
+                    System.out.println("Main(createGameRoomRoute) - User(id: " + userId + ") is already in GameRoom(id: " + gameRoomId + ")");
+                    return complete(StatusCodes.CONFLICT, "User(id: " + userId + ") already join to GameRoom(id: "+ gameRoomId +").");
                 } else {
                     System.out.println("Main(createGameRoomRoute) - Unknown message received");
                     return complete(StatusCodes.CONFLICT, "Unknown message received. Operation failed.");
@@ -126,11 +131,18 @@ public class Main extends AllDirectives {
                 } else if (message instanceof GameRoom.UserAlreadyJoinToGameRoom) {
                     System.out.println("Main(joinGameRoomRoute) - UserAlreadyJoinToGameRoom(id: " + gameRoomId + ", userId: " + userId + ") received");
                     return complete(StatusCodes.CONFLICT, "User(id: " + userId + ") already join to GameRoom(id: "+ gameRoomId +").");
+                } else if (message instanceof GameRoomManager.UserIsAlreadyInGame) {
+                    System.out.println("Main(joinGameRoomRoute) - UserAlreadyJoinToGameRoom(id: " + gameRoomId + ", userId: " + userId + ") received");
+                    return complete(StatusCodes.CONFLICT, "User(id: " + userId + ") already join to GameRoom(id: "+ gameRoomId +").");
                 } else if (message instanceof GameRoomManager.UnknownGameRoom) {
                     System.out.println("Main(joinGameRoomRoute) - UnknownGameRoom(id: " + gameRoomId + ") received");
                     return complete(StatusCodes.CONFLICT, "Invalid GameRoom(id: " + gameRoomId+ ").");
+                } else if (message instanceof GameRoom.GameRoomIsFull) {
+                    System.out.println("Main(joinGameRoomRoute) - GameRoomIsFull(id: " + gameRoomId + ") received");
+                    return complete(StatusCodes.CONFLICT, "GameRoom(id: " + gameRoomId+ ") is full.");
                 } else {
                     System.out.println("Main(joinGameRoomRoute) - Unknown message received");
+                    System.out.println(message);
                     return complete(StatusCodes.CONFLICT, "Unknown message received. Operation failed.");
                 }
             } catch(Exception e) {

@@ -1,7 +1,9 @@
 package ar.com.itba.actors;
 
-import akka.actor.AbstractActor;
-import akka.actor.Props;
+import akka.actor.*;
+import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.TimeUnit;
 
 public class SystemMonitor extends AbstractActor {
 
@@ -9,13 +11,36 @@ public class SystemMonitor extends AbstractActor {
         return Props.create(SystemMonitor.class, () -> new SystemMonitor());
     }
 
+    private Cancellable cancellable;
+
     @Override
-    public Receive createReceive() {
-        return receiveBuilder().match(Foo.class, message -> {
-            System.out.println("SystemMonitor");
-        }).build();
+    public void preStart() throws Exception {
+        super.preStart();
+        System.out.println("preStart");
+        ActorSystem system = getContext().system();
+        cancellable = system.scheduler().schedule(Duration.Zero(),
+                Duration.create(1, TimeUnit.SECONDS), getSelf(), "Tick",
+                system.dispatcher(), null);
     }
 
-    public static class Foo {}
+    @Override
+    public void postStop() throws Exception {
+        System.out.println("postStop");
+        super.postStop();
+        cancellable.cancel();
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder()
+                .matchEquals("Tick", message -> tick())
+                .build();
+    }
+
+    private void tick() {
+        System.out.println("SystemMonitor(tick) - ");
+    }
+
+    public static class Tick { }
 
 }
