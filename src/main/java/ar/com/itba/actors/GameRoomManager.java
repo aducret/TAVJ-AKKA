@@ -3,6 +3,7 @@ package ar.com.itba.actors;
 import akka.actor.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,6 +26,7 @@ public class GameRoomManager extends AbstractActor {
                 .match(LeaveGameRoom.class, message -> leaveGameRoom(message))
                 .match(JoinGameRoomSuccessfully.class, message -> joinGameRoomSuccessfully(message))
                 .match(LeaveGameRoomSuccessfully.class, message -> leaveGameRoomSuccessfully(message))
+                .match(GetGameRoomList.class, message -> getGameRoomList(message))
                 .build();
     }
 
@@ -90,7 +92,7 @@ public class GameRoomManager extends AbstractActor {
             System.out.println("GameRoomManager(leaveGameRoom) - User(id: " + userId + ") leaving GameRoom(id: "+ gameRoomId + ")");
             gameRoom.tell(new GameRoom.LeaveGameRoom(userId, getSender()), getSelf());
         } else {
-            System.out.println("GameRoomManager(leaveGameRoom) - Trying to leave an unknown GameRoom(id: " + gameRoomId + ")");
+            System.out.println("GameRoomManager(leaveGameRoom) - User(id: " + userId + ") trying to leave an unknown GameRoom(id: " + gameRoomId + ")");
             getSender().tell(new UnknownGameRoom(), getSelf());
         }
     }
@@ -107,6 +109,11 @@ public class GameRoomManager extends AbstractActor {
         String gameRoomId = message.gameRoomId;
         usersInGame.remove(message.userId);
         System.out.println("GameRoomManager(joinGameRoomSuccessfully) - User(id: " + userId + ") left successfully GameRoom(id: " + gameRoomId + ")");
+    }
+
+    private void getGameRoomList(GetGameRoomList message) {
+        System.out.println("GameRoomManager(getGameRoomList) - Game room list sended");
+        getSender().tell(new GameRoomList(gameRooms.keySet()), getSelf());
     }
 
     static public class CreateGameRoom {
@@ -200,5 +207,21 @@ public class GameRoomManager extends AbstractActor {
             this.userId = userId;
         }
     }
+
+    static public class GetGameRoomList { }
+
+    static public class GameRoomList {
+
+        private Set<String> list;
+
+        public GameRoomList(Set<String> list) {
+            this.list = list;
+        }
+
+        public Set<String> getList() {
+            return list;
+        }
+    }
+
 
 }

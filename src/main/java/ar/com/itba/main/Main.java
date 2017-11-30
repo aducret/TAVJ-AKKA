@@ -24,6 +24,8 @@ import ar.com.itba.actors.SystemMonitor;
 
 import java.io.IOException;
 import java.util.concurrent.CompletionStage;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Main extends AllDirectives {
 
@@ -35,10 +37,16 @@ public class Main extends AllDirectives {
     private static ActorRef gameRoomManager;
     private static ActorRef systemMonitor;
 
+    private static Boolean systemLogs = false;
+
     public static void main( String[] args ) throws IOException {
+        // Disable Mongo logs
+        Logger mongoLogger = Logger.getLogger("org.mongodb.driver");
+        mongoLogger.setLevel(Level.SEVERE);
+
         actorSystem = ActorSystem.create("TAVJ-AKKA");
         gameRoomManager = actorSystem.actorOf(GameRoomManager.props(), "GameRoomManager");
-        systemMonitor = actorSystem.actorOf(SystemMonitor.props(), "SytemMonitor");
+        systemMonitor = actorSystem.actorOf(SystemMonitor.props(systemLogs), "SytemMonitor");
 
         ActorSystem system = ActorSystem.create("Main");
         Http http = Http.get(system);
@@ -179,15 +187,47 @@ public class Main extends AllDirectives {
     }
 
     private Route getSystemDataRoute() {
-        return path(PathMatchers.segment("get").slash("system"), () -> parameter("id", systemId -> {
-            return complete(StatusCodes.OK, "get system: " + systemId);
-        }));
+        return path(PathMatchers.segment("get").slash("system"), () -> {
+            System.out.println("---------------------------------------------");
+            System.out.println("Main(getSystemDataRoute) - Processing get system stats");
+            try {
+                Object message = ask(systemMonitor, new SystemMonitor.GetSystemInfo(), TIME_OUT).toCompletableFuture().get();
+                if (message instanceof SystemMonitor.SystemStats) {
+                    SystemMonitor.SystemStats stats = (SystemMonitor.SystemStats) message;
+                    return complete(StatusCodes.OK, "System stats \n\nTotal memory (bytes): " + stats.getTotalMemory() + "\nMax memory (bytes): " + stats.getMaxMemory() + "\nFree memory (bytes): " + stats.getFreeMemory() + "\nCores: " + stats.getCores());
+                } else {
+                    System.out.println("Main(getSystemDataRoute) - Unknown message received");
+                    return complete(StatusCodes.CONFLICT, "Unknown message received. Operation failed.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return complete(StatusCodes.CONFLICT, "Exception received. Operation failed.");
+            }
+        });
     }
 
     private Route getGameRoomAddressRoute() {
-        return path(PathMatchers.segment("get").slash("gameRoom"), () -> parameter("id", gameId -> {
-            return complete(StatusCodes.OK, "get game: " + gameId);
-        }));
+        return path(PathMatchers.segment("list").slash("gameRoom"), () -> {
+            System.out.println("---------------------------------------------");
+            System.out.println("Main(getGameRoomAddressRoute) - Processing get system stats");
+            try {
+                Object message = ask(gameRoomManager, new GameRoomManager.GetGameRoomList(), TIME_OUT).toCompletableFuture().get();
+                if (message instanceof GameRoomManager.GameRoomList) {
+                    GameRoomManager.GameRoomList gameRoomList = (GameRoomManager.GameRoomList) message;
+                    String text = "Game rooms \n\n";
+                    for (String id: gameRoomList.getList()) {
+                        text += "GameRoom(id: " + id + ")\n";
+                    }
+                    return complete(StatusCodes.OK, text);
+                } else {
+                    System.out.println("Main(getGameRoomAddressRoute) - Unknown message received");
+                    return complete(StatusCodes.CONFLICT, "Unknown message received. Operation failed.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return complete(StatusCodes.CONFLICT, "Exception received. Operation failed.");
+            }
+        });
     }
 
 }
